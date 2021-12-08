@@ -1,0 +1,41 @@
+<!doctype html>
+<title>Speedruninator</title>
+<body>
+    <h1>Speedruninator</h1>
+    <form action="#" method="post">
+        <label for="park">Park: </label>
+        <select id="park" name="park">
+            {%for i in range(0, numparks)%}
+            <option value="{{ids[i]}}">{{names[i]}}</option>
+            {%endfor%}
+        </select>
+        <br />
+        <label for="startime">Start Time: </label>
+        <select id="starttime" name="starttime">
+            {%for i in range(0, 24)%}
+            <option value={{minutes[i]}}>{{times[i]}}</option>
+            {%endfor%}
+        </select>
+        <br />
+        <label for="walkspeed">Walking Speed (mph): </label>
+        <input type="text" id="walkspeed" name="walkspeed" size="4" placeholder="4">
+        <br /><br />
+        <div>
+            <span>Analysis Method</span>
+            <div>
+                <input type="radio" id="automethod" name="method" value="auto" checked>
+                <label for="automethod">Automatic (Picks best based on park size)</label>
+            </div>
+            <div>
+                <input type="radio" id="exactmethod" name="method" value="exact">
+                <label for="exactmethod">Exact (Takes extremely long for large parks)</label>
+            </div>
+            <div>
+                <input type="radio" id="approxmethod" name="method" value="approx">
+                <label for="approxmethod">Approximate (Sub-optimal but runs fast)</label>
+            </div>
+        </div>
+        <br />
+        <input type="submit" value="Speedrun">
+    </form>
+</body>

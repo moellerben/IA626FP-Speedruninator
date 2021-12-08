@@ -1,0 +1,30 @@
+<!doctype html>
+<title>Speedruninator | {{attractions[bestroute["path"][0]]["name"]}}</title>
+<body>
+    <h1>Speedruninator - {{attractions[bestroute["path"][0]]["name"]}}</h1>
+    <a href="/">Return to main menu</a>
+    <p>{{routetype}} solution to the optimal route problem, walking at {{walkspeed}} mph</p>
+    <ol>
+        <li>Start at the main entrance to {{attractions[bestroute["path"][0]]["name"]}} at {{arrivaltimes[0]}}</li>
+        {%for i in range(1,numsteps-1)%}
+            <li>Go to {{attractions[bestroute["path"][i]]["name"]}}
+                <ul>
+                    <li>Time spent walking: {{bestroute["times"][i-1]["distance"]}} mins</li>
+                    <li>Arrive at {{arrivaltimes[i]}}</li>
+                    <li>Time spent in line: {{bestroute["times"][i-1]["wait"]}} mins</li>
+                    <li>Time spent on ride: {{bestroute["times"][i-1]["ride"]}} mins</li>
+                    <li>Off ride at {{offridetimes[i]}}</li>
+                </ul>
+            </li>
+        {%endfor%}
+        <li>Go to park exit
+            <ul>
+                <li>Time spent walking: {{bestroute["times"][-1]["distance"]}} mins</li>
+                <li>Exit park at {{arrivaltimes[numsteps-1]}}</li>
+            </ul>
+        </li>
+    </ol>
+    <img id="piechart" src="data:image/png;base64,{{piechart}}"><br />
+    <img id="map" src="data:image/gif;base64,{{map}}"></br >
+    <a href="/">Return to main menu</a>
+</body>

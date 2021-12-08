@@ -9,6 +9,21 @@ conn = pymysql.connect(host=MYSQL_CONN["HOST"], port=MYSQL_CONN["PORT"], user=MY
                        passwd=MYSQL_CONN["PASS"], db=MYSQL_CONN["DB"], autocommit=True)
 cur = conn.cursor(pymysql.cursors.DictCursor)
 
+def getParkSlugsNamesIDs():
+    # Returns a pair of lists, all park slugs and display names
+    # Names are in the format "Park Name (Destination Name)"
+    # For now, only returning WDW parks since they're the only ones I have wait info for
+    slugs = []
+    names = []
+    ids = []
+    cur.execute("SELECT p.name as name, p.slug as slug, p.parkid as parkid, d.name as destname FROM Parks p, Parks d WHERE p.parentid IS NOT NULL AND p.parentid = d.parkid ORDER BY destname, name")
+    for r in cur:
+        if r["parkid"] in ["75ea578a-adc8-4116-a54d-dccb60765ef9", "47f90d2c-e191-4239-a466-5892ef59a88b", "288747d1-8b4f-4a64-867e-ea7c9b27bad8", "1c84a229-8862-4648-9c71-378ddd2c7693"]:
+            slugs.append(r['slug'])
+            names.append(f"{r['name']} ({r['destname']})")
+            ids.append(r['parkid'])
+    return slugs, names, ids
+
 def h(todois, currenti, distmatrix):
     # Nearest Neighbor heuristic algorithm
     if len(todois) == 1:
@@ -345,6 +360,12 @@ def minutecounttodisp(minutes):
         hour = hour - 12
         ampm = "PM"
     return f"{hour}:{str(minute).zfill(2)} {ampm}"
+
+def getnumrides(parkid):
+    cur.execute("SELECT COUNT(attractionid) as c FROM Attractions WHERE parkid = %s AND (type = 'RIDE' OR type = 'GATE') ORDER BY attractionid", parkid)
+    for row in cur:
+        num = row["c"]
+    return num
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Finds the best route through a theme park.")
