@@ -46,7 +46,7 @@ These objects are used by the Flask server to generate a reasonably user friendl
 
 Matplotlib is used to generate a pie chart illustrating the amount of time spent in the parks, broken down into walking, queueing, and riding. While the chart itself looks nice, the information it portrays is often quite dissappointing.
 
-![Time Spent Pie Chart](docs/ouput_pie.png)
+![Time Spent Pie Chart](docs/output_pie.png)
 
 Finally, an animated GIF is also generated which draws your route over a top-down satellite view of the park. While it doesn't follow the pathways like an actual Google Directions might, it makes it very easy to see how much the chosen route respects physical distance between rides. Often times, the distance is not the major factor (as illustrated by the pie chart), so some routes zig-zag across the park. As you may expect, decreasing the walking speed can actually cause the algorithm to be smarter about how it moves around the park, even if it means waiting longer for certain popular rides.
 
