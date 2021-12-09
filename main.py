@@ -147,3 +147,6 @@ def index():
         minutes = minutes[9:] + minutes[:9]
         print(times)
         return render_template("index.html", numparks=len(slugs), ids=ids, names=names, times=times, minutes=minutes)
+
+if __name__ == "__main__":
+    app.run(host='127.0.0.1', debug=True)
