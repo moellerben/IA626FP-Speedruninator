@@ -15,7 +15,68 @@ A web form is presented to the user which allows them to select which park they 
 
 Then, a Python script interprets the input options before providing all the required information to the main function of this project, get_speedrun() (located in [speedrun.py](speedrun.py)). This executes one of two methods to obtain a route: exact or approximate. The reasoning for this is that the problem of finding the optimal route through all rides with varying wait times is a modified version of the [Travelling Salesman Problem](https://en.wikipedia.org/wiki/Travelling_salesman_problem), which is np-hard. In other words, with a large enough number of "cities" (or rides) to visit, it can take a prohibitively long time to come up with an exact solution. Through testing, it has been determined that the exact solution terminates in a reasonable amount of time (roughly 5-10 seconds on my laptop) for parks with less than 15 rides. Fortunately, most of the parks covered have less than 15 attractions that are considered "rides". For the sake of this project, the solution only visits entities with type "ATTRACTION" as defined by the [ThemeParks.wiki API](https://themeparks.wiki) (using v1), which excludes live shows, character meet & greets, and films. This is because the excluded attractions' wait times are often dictated by the duration of the attraction due to large batch sizes and the fact that many of those attractions can fit the entire queue into a single batch. For parks with more than 15 attractions, an approximate solution is found.
 - The exact method implements a "branch and bound" solution, which searches every possible path through the park. As you might expect, this is very time consuming, so a bound is applied to the search based on the current best route and the value of a heuristic function as calculated on the current partial route. For this project, the heuristic function is the sum of the durations of all rides not yet ridden. If the amount of time spent on a given route so far plus the amount of time it would take to ride all remaining rides, assuming you could teleport from one ride to the next and skip all lines, is greater than the amount of time required to complete the current best known route, then the current partial route is abandoned and a new partial route is selected.
+
+  ```python
+  node = {}
+  node["path"] = [front_gate] # ordered list of attractions already visited
+  node["todo"] = [list of all attractions] # unordered list of attractions to visit
+  node["cost"] = 0 # total time spent so far
+  node["heuristic"] = sum([duration(a) for a in node["todo"]]) # extremely optimistic estimate of remaining time (never more than actual)
+  
+  queue = [node] # list of complete or partial routes to be analyzed
+  bestpath = None # best complete route found so far
+  
+  while len(queue) > 0:
+    queue = sort_queue_by_cost_plus_heuristic(queue)
+    head = queue.pop()
+    if head["todo"] == []:
+      if head["cost"] < bestpath["cost"]:
+        bestpath = head
+    else:
+      for a in head["todo"]:
+        n = {}
+        n["path"] = head["path"] + [a]
+        n["todo"] = head["todo"] - [a]
+        n["cost"] = head["cost"] + distance(n["path"][-2:-1]) + waittime(a, arrivaltime) + duration(a)
+        n["heuristic"] = sum([duration(a) for a in n["todo"])
+        if n["cost"] + n["heuristic"] < bestpath["cost"]:
+          queue.append(n)
+  return bestpath
+  ```
 - The approximate method starts off with a greedy algorithm which creates a route by always picking the fastest ride to complete (ie, walk to, wait in line for, and ride) from the list of rides not yet ridden. This provides a solution which is likely not optimal, but is at least on the right track. It also provides a complete route in a very short amount of time. Then, 2- and 3-opt moves are performed on all stages of the route, modifying the route until no modifications yield a faster route. These 2- and 3-opt moves re-arrange the order in which rides are ridden by swapping fragments of a route to create a new route which potentially is faster. This process continues until no moves produce a faster route, at which point the algorithm has found a local minimum. When testing this algorithm against the exact solution, results within 12.5% of the exact solution were found.
+
+  ```python
+  # quickly get a reasonably fast route using a greedy method
+  node = {}
+  node["path"] = [front_gate]
+  node["todo"] = [list of all attractions]
+  node["cost"] = 0
+  while len(node["todo"]) > 0:
+    best_a = None
+    for a in node["todo"]:
+      if cost(a) < cost(best_a): # cost = distance + waittime + duration
+        best_a = a
+    node["path"] += [best_a]
+    node["todo"] -= [best_a]
+    node["cost"] += cost(best_a)
+  
+  # perform 2-opt moves
+  newbest = node
+  while newbest is not None:
+    newbest = None
+    for i in range(1, len(node["path"])-2): # Can't switch start or end nodes since they're the gates
+      for j in range(i+1, len(node["path"])-1):
+        routestart = node["path"][0:i]
+        routemid = node["path"][i:j].reverse()
+        routeend = node["path"][j:]
+        n = calculate_new_route(routestart + routemid + routeend)
+        if n["cost"] < node["cost"]:
+          if newbest is None or n["cost"] < newbest["cost"]:
+            newbest = n
+            
+  # perform 3-opt moves (omitted from readme)
+  return newbest
+  ```
 
 To simulate how long a day at a Disney park would take, three sources of time were considered: walking time, queueing time, and riding time.
 - Walking time is obtained through a combination of sources. First, the latitude and longitude of each attraction is obtained from the [ThemeParks.wiki API](https://themeparks.wiki). Then, the actual distance required to walk from one attraction to the next (while following all pathways) is obtained from the Google Directions API. Since Google has mapped out pathways in the Disney parks, the returned distance in meters is roughly equivalent to the actual distance required to walk from one ride to the next. To avoid continually pinging the Directions API, the distance (in meters) between all pairs of rides within the same park is saved to a database table. Then, when the walking time is requested, that distance is simply divided by the provided walking speed (after converting to meters per minute) to provide the estimated walking time in minutes. To help speed up the script, all walking distances are retrieved, converted to times, and stored in a matrix which can be indexed quickly by the Python script.
